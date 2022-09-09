@@ -7,6 +7,9 @@ metadata:
     chart: {{ template "prometheus-rabbitmq-exporter.chart" . }}
     release: {{ .Release.Name }}
     heritage: {{ .Release.Service }}
+  {{- if .Values.additionalLabels }}
+{{ toYaml .Values.additionalLabels | indent 4 }}
+  {{- end }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -24,6 +27,13 @@ spec:
       annotations:
 {{ toYaml .Values.annotations | indent 8 }}
     spec:
+    {{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.image.pullSecrets }}
+        - name: {{ . }}
+      {{- end }}
+    {{- end }}
+      serviceAccountName: {{ template "prometheus-rabbitmq-exporter.serviceAccountName" . }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"

@@ -24,7 +24,7 @@ spec:
 {{- end }}
 {{- end }}
 {{- if .Values.server.persistentVolume.volumeBindingMode }}
-  volumeBindingModeName: "{{ .Values.server.persistentVolume.volumeBindingMode }}"
+  volumeBindingMode: "{{ .Values.server.persistentVolume.volumeBindingMode }}"
 {{- end }}
   resources:
     requests:
@@ -32,6 +32,9 @@ spec:
 {{- if .Values.server.persistentVolume.selector }}
   selector:
   {{- toYaml .Values.server.persistentVolume.selector | nindent 4 }}
+{{- end -}}
+{{- if .Values.server.persistentVolume.volumeName }}
+  volumeName: "{{ .Values.server.persistentVolume.volumeName }}"
 {{- end -}}
 {{- end -}}
 {{- end -}}

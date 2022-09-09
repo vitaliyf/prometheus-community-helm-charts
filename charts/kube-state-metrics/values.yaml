@@ -1,8 +1,9 @@
 # Default values for kube-state-metrics.
 prometheusScrape: true
 image:
-  repository: k8s.gcr.io/kube-state-metrics/kube-state-metrics
-  tag: v2.2.4
+  repository: registry.k8s.io/kube-state-metrics/kube-state-metrics
+  tag: v2.6.0
+  sha: ""
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -28,11 +29,15 @@ service:
   type: ClusterIP
   nodePort: 0
   loadBalancerIP: ""
+  clusterIP: ""
   annotations: {}
 
 ## Additional labels to add to all resources
 customLabels: {}
   # app: kube-state-metrics
+
+## set to true to add the release label so scraping of the servicemonitor with kube-prometheus-stack works out of the box
+releaseLabel: false
 
 hostNetwork: false
 
@@ -45,6 +50,13 @@ rbac:
 
   # If set to false - Run without Cluteradmin privs needed - ONLY works if namespace is also set (if useExistingRole is set this name is used as ClusterRole or Role to bind to)
   useClusterRole: true
+
+  # Add permissions for CustomResources' apiGroups in Role/ClusterRole. Should be used in conjunction with Custom Resource State Metrics configuration
+  # Example:
+  # - apiGroups: ["monitoring.coreos.com"]
+  #   resources: ["prometheuses"]
+  #   verbs: ["list", "watch"]
+  extraRules: []
 
 serviceAccount:
   # Specifies whether a ServiceAccount should be created, require rbac true
@@ -65,9 +77,16 @@ prometheus:
     enabled: false
     additionalLabels: {}
     namespace: ""
+    jobLabel: ""
+    interval: ""
+    scrapeTimeout: ""
+    proxyUrl: ""
+    selectorOverride: {}
     honorLabels: false
     metricRelabelings: []
     relabelings: []
+    scheme: ""
+    tlsConfig: {}
 
 ## Specify if a Pod Security Policy for kube-state-metrics must be created
 ## Ref: https://kubernetes.io/docs/concepts/policy/pod-security-policy/
@@ -108,6 +127,13 @@ affinity: {}
 ## Tolerations for pod assignment
 ## Ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
 tolerations: []
+
+## Topology spread constraints for pod assignment
+## Ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+topologySpreadConstraints: []
+
+# Annotations to be added to the deployment/statefulset
+annotations: {}
 
 # Annotations to be added to the pod
 podAnnotations: {}
@@ -184,8 +210,16 @@ kubeconfig:
   # base64 encoded kube-config file
   secret:
 
+# Enable only the release namespace for collecting resources. By default all namespaces are collected.
+# If releaseNamespace and namespaces are both set only releaseNamespace will be used.
+releaseNamespace: false
+
 # Comma-separated list of namespaces to be enabled for collecting resources. By default all namespaces are collected.
 namespaces: ""
+
+# Comma-separated list of namespaces not to be enabled. If namespaces and namespaces-denylist are both set,
+# only namespaces that are excluded in namespaces-denylist will be used.
+namespacesDenylist: ""
 
 ## Override the deployment namespace
 ##
@@ -210,7 +244,22 @@ kubeTargetVersionOverride: ""
 
 # Enable self metrics configuration for service and Service Monitor
 # Default values for telemetry configuration can be overridden
+# If you set telemetryNodePort, you must also set service.type to NodePort
 selfMonitor:
   enabled: false
   # telemetryHost: 0.0.0.0
   # telemetryPort: 8081
+  # telemetryNodePort: 0
+
+# volumeMounts are used to add custom volume mounts to deployment.
+# See example below
+volumeMounts: []
+#  - mountPath: /etc/config
+#    name: config-volume
+
+# volumes are used to add custom volumes to deployment
+# See example below
+volumes: []
+#  - configMap:
+#      name: cm-for-volume
+#    name: config-volume

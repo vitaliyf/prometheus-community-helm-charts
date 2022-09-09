@@ -2,15 +2,12 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: {{ template "stackdriver-exporter.name" .  }}
+  name: {{ template "stackdriver-exporter.fullname" .  }}
   {{- if .Values.serviceMonitor.namespace }}
   namespace: {{ .Values.serviceMonitor.namespace }}
   {{- end }}
   labels:
-    chart: {{ template "stackdriver-exporter.chart" . }}
-    app: {{ template "stackdriver-exporter.name" . }}
-    release: "{{ .Release.Name }}"
-    heritage: "{{ .Release.Service }}"
+    {{- include "stackdriver-exporter.labels" . | indent 4 }}
     {{- if .Values.serviceMonitor.additionalLabels }}
     {{- toYaml .Values.serviceMonitor.additionalLabels | nindent 4 }}
     {{- end }}
@@ -19,6 +16,8 @@ spec:
   - port: http
     {{- if .Values.serviceMonitor.interval }}
     interval: {{ .Values.serviceMonitor.interval }}
+    {{- end }}
+    {{- if .Values.serviceMonitor.scrapeTimeout }}
     scrapeTimeout: {{ .Values.serviceMonitor.scrapeTimeout }}
     {{- end }}
     honorLabels: {{ .Values.serviceMonitor.honorLabels }}
@@ -33,8 +32,5 @@ spec:
     {{- end }}
   selector:
     matchLabels:
-      chart: {{ template "stackdriver-exporter.chart" . }}
-      app: {{ template "stackdriver-exporter.name" . }}
-      release: "{{ .Release.Name }}"
-      heritage: "{{ .Release.Service }}"
+      {{- include "stackdriver-exporter.selectorLabels" . | indent 6 }}
 {{- end }}

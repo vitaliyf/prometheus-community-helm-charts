@@ -43,10 +43,7 @@ spec:
 {{- if .Values.priorityClassName }}
       priorityClassName: "{{ .Values.priorityClassName }}"
 {{- end }}
-{{- if .Values.image.pullSecret }}
-      imagePullSecrets:
-        - name: {{ .Values.image.pullSecret }}
-{{- end }}
+      {{- include "elasticsearch-exporter.image.pullSecret.name" (dict "images" (list .Values.image) "context" $) | nindent 6 }}
       restartPolicy: {{ .Values.restartPolicy }}
       {{- if .Values.securityContext.enabled }}
       securityContext:
@@ -97,6 +94,9 @@ spec:
                     {{- if .Values.es.indices_settings }}
                     "--es.indices_settings",
                     {{- end }}
+                    {{- if .Values.es.indices_mappings }}
+                    "--es.indices_mappings",
+                    {{- end }}
                     {{- if .Values.es.shards }}
                     "--es.shards",
                     {{- end }}
@@ -116,6 +116,9 @@ spec:
                     "--es.client-cert={{ .Values.es.ssl.client.pemPath }}",
                     "--es.client-private-key={{ .Values.es.ssl.client.keyPath }}",
                     {{- end }}
+                    {{- end }}
+                    {{- range .Values.extraArgs }}
+                    {{ . | quote }},
                     {{- end }}
                     "--web.listen-address=:{{ .Values.service.httpPort }}",
                     "--web.telemetry-path={{ .Values.web.path }}"]
@@ -159,7 +162,7 @@ spec:
           lifecycle:
             preStop:
               exec:
-                command: ["/bin/bash", "-c", "sleep 20"]
+                command: ["/bin/ash", "-c", "sleep 20"]
           volumeMounts:
             {{- if and .Values.es.ssl.enabled (eq .Values.es.ssl.useExistingSecrets false) }}
             - mountPath: /ssl
